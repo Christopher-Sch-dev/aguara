@@ -123,8 +123,39 @@ aguara scan --auto
 
 ### CI Integration
 
+#### GitHub Action
+
 ```yaml
-# GitHub Actions
+- uses: garagon/aguara@v1
+```
+
+Scans your repository, uploads findings to GitHub Code Scanning, and optionally fails the build:
+
+```yaml
+- uses: garagon/aguara@v1
+  with:
+    path: ./mcp-server/
+    severity: medium
+    fail-on: high
+```
+
+All inputs are optional. See [`action.yml`](action.yml) for the full list.
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `path` | `./` | Path to scan |
+| `severity` | `info` | Minimum severity to report |
+| `fail-on` | _(none)_ | Fail if findings at or above this severity |
+| `format` | `sarif` | Output format: sarif, json, terminal, markdown |
+| `upload-sarif` | `true` | Upload SARIF to GitHub Code Scanning |
+| `version` | _(latest)_ | Pin a specific Aguara version |
+
+> **Note**: SARIF upload requires the `security-events: write` permission and is free for public repositories.
+
+#### Manual / GitLab CI
+
+```yaml
+# GitHub Actions (without the action)
 - name: Scan skills for security issues
   run: |
     curl -fsSL https://raw.githubusercontent.com/garagon/aguara/main/install.sh | bash
