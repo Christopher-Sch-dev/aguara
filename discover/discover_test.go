@@ -556,6 +556,93 @@ func TestResult_AllServers(t *testing.T) {
 	}
 }
 
+// --- FormatMarkdown tests ---
+
+func TestFormatMarkdown(t *testing.T) {
+	result := &Result{
+		Clients: []ClientResult{
+			{
+				Client: "cursor",
+				Path:   "/home/user/.cursor/mcp.json",
+				Servers: []MCPServer{
+					{Name: "filesystem", Command: "npx", Args: []string{"@mcp/server-filesystem"}},
+					{Name: "database", Command: "node", Args: []string{"./db.js"}},
+				},
+			},
+		},
+	}
+
+	output := FormatMarkdown(result)
+
+	if !strings.Contains(output, "## MCP Clients Discovered") {
+		t.Error("should contain markdown header")
+	}
+	if !strings.Contains(output, "| Cursor |") {
+		t.Error("should contain client display name in table row")
+	}
+	if !strings.Contains(output, "| 2 |") {
+		t.Error("should contain server count in table row")
+	}
+	if !strings.Contains(output, "| Client | Config Path | Servers |") {
+		t.Error("should contain table header")
+	}
+	if !strings.Contains(output, "2 MCP servers across 1 client") {
+		t.Error("should contain total summary")
+	}
+}
+
+func TestFormatMarkdown_Empty(t *testing.T) {
+	result := &Result{}
+	output := FormatMarkdown(result)
+	if output != "No MCP configurations found.\n" {
+		t.Errorf("empty result = %q, want 'No MCP configurations found.'", output)
+	}
+}
+
+func TestFormatMarkdown_MultipleClients(t *testing.T) {
+	result := &Result{
+		Clients: []ClientResult{
+			{Client: "cursor", Path: "/path/a", Servers: []MCPServer{{Name: "s1"}}},
+			{Client: "vscode", Path: "/path/b", Servers: []MCPServer{{Name: "s2"}, {Name: "s3"}}},
+		},
+	}
+
+	output := FormatMarkdown(result)
+
+	if !strings.Contains(output, "| Cursor |") {
+		t.Error("should contain Cursor row")
+	}
+	if !strings.Contains(output, "| VS Code |") {
+		t.Error("should contain VS Code row")
+	}
+	if !strings.Contains(output, "3 MCP servers across 2 clients") {
+		t.Error("should contain correct totals")
+	}
+}
+
+func TestFormatMarkdown_PipeInPath(t *testing.T) {
+	result := &Result{
+		Clients: []ClientResult{
+			{
+				Client: "cursor",
+				Path:   "/home/user/my|config/mcp.json",
+				Servers: []MCPServer{
+					{Name: "test", Command: "node"},
+				},
+			},
+		},
+	}
+
+	output := FormatMarkdown(result)
+
+	if strings.Contains(output, "my|config") {
+		t.Error("unescaped pipe character in markdown table would break rendering")
+	}
+	if !strings.Contains(output, `my\|config`) {
+		t.Error("expected escaped pipe in path")
+	}
+}
+
 func TestClientDisplayName_AllClients(t *testing.T) {
 	expected := map[string]string{
 		"claude-desktop": "Claude Desktop",

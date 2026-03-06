@@ -139,6 +139,36 @@ func FormatTree(result *Result) string {
 	return b.String()
 }
 
+// FormatMarkdown returns a Markdown-formatted table of discovered MCP servers.
+func FormatMarkdown(result *Result) string {
+	if len(result.Clients) == 0 {
+		return "No MCP configurations found.\n"
+	}
+
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "## MCP Clients Discovered\n\n")
+	b.WriteString("| Client | Config Path | Servers |\n")
+	b.WriteString("|--------|------------|--------|\n")
+
+	for _, cr := range result.Clients {
+		escapedPath := strings.ReplaceAll(cr.Path, "|", "\\|")
+		fmt.Fprintf(&b, "| %s | `%s` | %d |\n", clientDisplayName(cr.Client), escapedPath, len(cr.Servers))
+	}
+
+	b.WriteString("\n")
+	serverWord := "servers"
+	if result.TotalServers() == 1 {
+		serverWord = "server"
+	}
+	clientWord := "clients"
+	if result.TotalClients() == 1 {
+		clientWord = "client"
+	}
+	fmt.Fprintf(&b, "**Total:** %d MCP %s across %d %s\n", result.TotalServers(), serverWord, result.TotalClients(), clientWord)
+	return b.String()
+}
+
 func clientDisplayName(name string) string {
 	switch name {
 	case "claude-desktop":
