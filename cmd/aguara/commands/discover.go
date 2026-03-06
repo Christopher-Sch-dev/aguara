@@ -33,7 +33,7 @@ func runDiscover(cmd *cobra.Command, args []string) error {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(result)
-	case "markdown":
+	case "markdown", "md":
 		fmt.Print(discover.FormatMarkdown(result))
 		return nil
 	default:

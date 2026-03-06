@@ -156,7 +156,15 @@ func FormatMarkdown(result *Result) string {
 	}
 
 	b.WriteString("\n")
-	fmt.Fprintf(&b, "**Total:** %d MCP servers across %d clients\n", result.TotalServers(), result.TotalClients())
+	serverWord := "servers"
+	if result.TotalServers() == 1 {
+		serverWord = "server"
+	}
+	clientWord := "clients"
+	if result.TotalClients() == 1 {
+		clientWord = "client"
+	}
+	fmt.Fprintf(&b, "**Total:** %d MCP %s across %d %s\n", result.TotalServers(), serverWord, result.TotalClients(), clientWord)
 	return b.String()
 }
 

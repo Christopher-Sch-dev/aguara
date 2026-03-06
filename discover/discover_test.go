@@ -586,7 +586,7 @@ func TestFormatMarkdown(t *testing.T) {
 	if !strings.Contains(output, "| Client | Config Path | Servers |") {
 		t.Error("should contain table header")
 	}
-	if !strings.Contains(output, "2 MCP servers across 1 clients") {
+	if !strings.Contains(output, "2 MCP servers across 1 client") {
 		t.Error("should contain total summary")
 	}
 }
