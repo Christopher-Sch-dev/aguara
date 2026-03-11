@@ -38,7 +38,7 @@ AI agents and MCP servers run code on your behalf. A single malicious skill file
 - **177 detection rules across 13 categories** — prompt injection, data exfiltration, credential leaks, supply-chain attacks, MCP-specific threats, command execution, SSRF, unicode attacks, and more.
 - **4-layer analysis engine** — pattern matching, NLP-based markdown analysis, taint tracking, and rug-pull detection work together to catch threats that any single technique would miss.
 - **Confidence scoring** — every finding carries a confidence level (0.0-1.0), so you can prioritize triage and filter noise.
-- **Remediation guidance** — high-impact rules include actionable fix suggestions in the scan output.
+- **Remediation guidance** — all 177 rules include actionable fix suggestions, shown in every output format.
 - **Deterministic** — same input, same output. Every scan is reproducible.
 - **CI-ready** — JSON, SARIF, and Markdown output. GitHub Action. `--fail-on` threshold. `--changed` for incremental scans.
 - **17 MCP clients supported** — auto-discover and scan configs from Claude Desktop, Cursor, VS Code, Windsurf, and 13 more.
@@ -117,12 +117,12 @@ Aguara runs 4 analysis layers sequentially on every file. Each layer catches dif
 
 | Layer | Engine | What it catches |
 |-------|--------|-----------------|
-| **Pattern Matcher** | Regex + contains matching | Known attack signatures, credential patterns, dangerous commands. Decodes base64/hex blobs and re-scans. Downgrades severity for matches inside markdown code blocks. |
+| **Pattern Matcher** | Regex + contains matching | Known attack signatures, credential patterns, dangerous commands. Rules pre-grouped by file extension for fast lookup. Decodes base64/hex blobs and re-scans. Downgrades severity for matches inside markdown code blocks. |
 | **NLP Analyzer** | Goldmark AST walker | Prompt injection in markdown structure — instruction overrides, role-switching, and jailbreaks detected via keyword classification on headings, paragraphs, and list items. |
 | **Taint Tracker** | Source-to-sink flow analysis | Dangerous capability combinations: reading private data + writing to external URLs, environment variables flowing to shell execution, API responses piped to eval. |
 | **Rug-Pull Detector** | SHA256 hash tracking | Tool descriptions that change between scans — catches MCP servers that modify their behavior after initial review. Requires `--monitor` flag. |
 
-All layers report findings with severity, confidence score, matched text, file location with context lines, and remediation guidance when available.
+All layers report findings with severity, confidence score, matched text, file location with context lines, and remediation guidance.
 
 ## Usage
 
@@ -165,8 +165,11 @@ Aguara auto-detects MCP configurations across **17 clients**: Claude Desktop, Cu
 # List all detected MCP configs
 aguara discover
 
-# JSON output
+# JSON output (sensitive env values are automatically redacted)
 aguara discover --format json
+
+# Markdown output
+aguara discover --format markdown
 
 # Discover + scan in one command
 aguara scan --auto
@@ -299,7 +302,21 @@ See [RULES.md](RULES.md) for the complete rule catalog with IDs and severity lev
 
 ### Remediation Guidance
 
-High-impact rules include remediation text in their findings:
+All 177 rules include remediation text. It appears in every output format:
+
+- **Terminal**: always shown for CRITICAL findings, shown for all severities with `--verbose`
+- **JSON**: included in every finding object
+- **SARIF**: mapped to the `help` field on each rule
+- **Markdown**: shown for HIGH and CRITICAL findings
+- **Explain**: `aguara explain RULE_ID` shows the full remediation text
+
+```bash
+# See remediation for a specific rule
+aguara explain CRED_002
+
+# Terminal output with remediation for all findings
+aguara scan . --verbose
+```
 
 ```json
 {
@@ -310,8 +327,6 @@ High-impact rules include remediation text in their findings:
   "confidence": 0.85
 }
 ```
-
-Use `--verbose` in terminal output or `--format json` to see remediation guidance.
 
 ### Custom Rules
 
@@ -340,6 +355,8 @@ examples:
 ```
 
 `exclude_patterns` suppress a match when the matched line (or up to 3 lines before it) matches any exclude pattern. Useful for reducing false positives in documentation headings, installation guides, etc.
+
+Custom rules are validated at load time: unknown YAML fields are rejected, and all rules require `id`, `name`, `category`, and at least one pattern.
 
 ```bash
 aguara scan .claude/skills/ --rules ./my-rules/
@@ -406,7 +423,7 @@ internal/
   rules/               Rule engine: YAML loader, compiler, self-tester
     builtin/           177 embedded rules across 12 YAML files (go:embed)
   scanner/             Orchestrator: file discovery, parallel analysis, inline ignore, result aggregation
-  meta/                Post-processing: dedup, scoring, correlation, confidence adjustment
+  meta/                Post-processing: cross-rule dedup, scoring, correlation, confidence adjustment
   output/              Formatters: terminal (ANSI), JSON, SARIF, Markdown
   config/              .aguara.yml loader
   state/               Persistence for incremental scanning and rug-pull detection
