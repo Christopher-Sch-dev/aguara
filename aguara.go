@@ -154,6 +154,9 @@ func scanContentInternal(ctx context.Context, content string, filename string, t
 func ListRules(opts ...Option) []RuleInfo {
 	cfg := applyOpts(opts)
 	cr, _ := loadAndCompile(cfg)
+	if cr == nil {
+		return nil
+	}
 	compiled := cr.compiled
 
 	sort.Slice(compiled, func(i, j int) bool {
@@ -187,6 +190,9 @@ func ExplainRule(id string, opts ...Option) (*RuleDetail, error) {
 	id = strings.ToUpper(strings.TrimSpace(id))
 	cfg := applyOpts(opts)
 	cr, _ := loadAndCompile(cfg)
+	if cr == nil {
+		return nil, fmt.Errorf("rule %q not found (rules failed to load)", id)
+	}
 	compiled := cr.compiled
 
 	var found *rules.CompiledRule
